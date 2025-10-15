@@ -1,7 +1,8 @@
-public class q01 {
+public class Deposito {
     private int itens = 0;
     private final int capacidade = 100;
 
+    // Produz (adiciona uma caixa)
     public synchronized boolean colocar() {
         if (itens < capacidade) {
             itens++;
@@ -13,6 +14,7 @@ public class q01 {
         }
     }
 
+    // Consome (retira uma caixa)
     public synchronized boolean retirar() {
         if (itens > 0) {
             itens--;
@@ -29,7 +31,8 @@ public class q01 {
     }
 
     public static void main(String[] args) {
-        q01 dep = new q01();
+        Deposito dep = new Deposito();
+
         Produtor p = new Produtor(dep, 50);
         Consumidor c1 = new Consumidor(dep, 150);
         Consumidor c2 = new Consumidor(dep, 100);
@@ -38,24 +41,39 @@ public class q01 {
         Consumidor c5 = new Consumidor(dep, 150);
 
         p.start();
-        c1.start(); c2.start(); c3.start(); c4.start(); c5.start();
 
-        System.out.println("Execução do main da classe Depósito terminada.");
+        c1.start();
+        c2.start();
+        c3.start();
+        c4.start();
+        c5.start();
+
+        try {
+            p.join(); // aguarda o produtor terminar
+            c1.join(); c2.join(); c3.join(); c4.join(); c5.join(); // aguarda consumidores terminarem
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("Execução finalizada. Total de caixas restantes: " + dep.getNumItens());
     }
 }
 
 class Produtor extends Thread {
-    private q01 deposito;
+    private Deposito deposito;
     private int tempo;
 
-    public Produtor(q01 dep, int tempo) {
+    public Produtor(Deposito dep, int tempo) {
         this.deposito = dep;
         this.tempo = tempo;
     }
 
     public void run() {
-        for (int i = 0; i < 100; i++) {
-            deposito.colocar();
+        int produzidas = 0;
+        while (produzidas < 100) {
+            if (deposito.colocar()) {
+                produzidas++;
+            }
             try {
                 Thread.sleep(tempo);
             } catch (InterruptedException e) {
@@ -67,17 +85,20 @@ class Produtor extends Thread {
 }
 
 class Consumidor extends Thread {
-    private q01 deposito;
+    private Deposito deposito;
     private int tempo;
 
-    public Consumidor(q01 dep, int tempo) {
+    public Consumidor(Deposito dep, int tempo) {
         this.deposito = dep;
         this.tempo = tempo;
     }
 
     public void run() {
-        for (int i = 0; i < 20; i++) {
-            deposito.retirar();
+        int consumidas = 0;
+        while (consumidas < 20) {
+            if (deposito.retirar()) {
+                consumidas++;
+            }
             try {
                 Thread.sleep(tempo);
             } catch (InterruptedException e) {
